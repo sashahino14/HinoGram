@@ -1,4 +1,4 @@
-name: Build HinogGram
+name: Build HinoGram
 on: [push, workflow_dispatch]
 
 jobs:
@@ -6,9 +6,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      # CORRECTION ICI : On ajoute les options pour tout télécharger
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # Télécharge les sous-dossiers (le moteur)
+          fetch-depth: 0         # Récupère tout l'historique (nécessaire pour la version)
       
-      # Telegram a besoin de Java 17 pour les versions récentes
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -16,19 +19,16 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # On rend le script de compilation exécutable
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # C'est ici que la magie opère : Compilation de la version FOSS Debug
-      # On injecte les secrets (APP_ID et API_HASH)
       - name: Build Debug APK
         env:
           APP_ID: ${{ secrets.APP_ID }}
           API_HASH: ${{ secrets.API_HASH }}
-        run: ./gradlew assembleFossDebug --stacktrace
+        # Ajout de --scan pour avoir un lien de débogage si jamais ça recrache
+        run: ./gradlew assembleFossDebug --stacktrace --scan
 
-      # Une fois fini, on upload l'APK pour que tu puisses le télécharger
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
