@@ -1,7 +1,7 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
-// CORRECTION 1 : On passe en 'application' pour pouvoir générer l'APK et avoir un ID
-apply plugin: 'com.android.application'
+// CORRECTION : On revient en 'library' car c'est le moteur du projet
+apply plugin: 'com.android.library'
 
 repositories {
     mavenCentral()
@@ -57,7 +57,6 @@ android {
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
-    // Configuration globale de CMake (Chemin du fichier)
     externalNativeBuild {
         cmake {
             path 'jni/CMakeLists.txt'
@@ -81,37 +80,31 @@ android {
     }
 
     defaultConfig {
-        versionCode = Integer.parseInt(APP_VERSION_CODE)
         minSdkVersion 19
         targetSdkVersion 33
         versionName "8.9.0"
         
-        // Ton ID unique
-        applicationId "org.hinogram.messenger"
-
+        // PAS D'APPLICATION ID ICI (C'est une librairie)
+        
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
         
-        // --- CONFIGURATION GITHUB ACTIONS ---
+        // Tes clés API restent ici, c'est parfait
         def myAppId = System.getenv("APP_ID") ?: "12345"
         def myApiHash = System.getenv("API_HASH") ?: "test"
         
         buildConfigField "int", "APP_ID", myAppId
         buildConfigField "String", "APP_HASH", "\"$myApiHash\""
-        // ------------------------------------
 
         multiDexEnabled true
 
-        // Configuration CMake spécifique à la compilation (Arguments)
-        // CORRECTION 2 : Ce bloc est bien remis À L'INTÉRIEUR de defaultConfig
         externalNativeBuild {
             cmake {
                 version '3.10.2'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
-    } // Fin de defaultConfig
+    }
 
-    // CORRECTION 3 : buildTypes est maintenant bien À L'INTÉRIEUR de android { }
     buildTypes {
         debug {
             debuggable true
@@ -127,7 +120,7 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
         }
-
+        // ... (Le reste des build types est standard, tu peux laisser tel quel ou copier si besoin)
         HA_private {
             debuggable false
             jniDebuggable false
