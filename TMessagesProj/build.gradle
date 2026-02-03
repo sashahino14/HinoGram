@@ -1,6 +1,7 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
-apply plugin: 'com.android.library'
+// CORRECTION 1 : On passe en 'application' pour pouvoir générer l'APK et avoir un ID
+apply plugin: 'com.android.application'
 
 repositories {
     mavenCentral()
@@ -49,18 +50,6 @@ dependencies {
 
 def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 
-//return an api key from a properties file.
-def getAppId(){
-    Properties properties = new Properties()
-    properties.load(new FileInputStream("./API_KEYS"))
-    return properties.get("APP_ID")
-}
-def getAppHash(){
-    Properties properties = new Properties()
-    properties.load(new FileInputStream("./API_KEYS"))
-    return "\"" + properties.get("APP_HASH") + "\""
-}
-
 android {
     compileSdkVersion 33
     buildToolsVersion '33.0.0'
@@ -68,6 +57,7 @@ android {
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
+    // Configuration globale de CMake (Chemin du fichier)
     externalNativeBuild {
         cmake {
             path 'jni/CMakeLists.txt'
@@ -87,39 +77,41 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
-
         coreLibraryDesugaringEnabled true
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
-
     defaultConfig {
-    minSdkVersion 19
-    targetSdkVersion 33
-    versionName "8.9.0"
-    applicationId "org.hinogram.messenger"  // <--- AJOUTÉ ICI
+        versionCode = Integer.parseInt(APP_VERSION_CODE)
+        minSdkVersion 19
+        targetSdkVersion 33
+        versionName "8.9.0"
+        
+        // Ton ID unique
+        applicationId "org.hinogram.messenger"
 
-    vectorDrawables.generatedDensities = ...
-    
-    // obtain your own keys...
-    // LES NOUVELLES LIGNES POUR GITHUB ACTIONS :
-    def myAppId = System.getenv("APP_ID") ?: "12345"
-    def myApiHash = System.getenv("API_HASH") ?: "test"
-    
-    buildConfigField "int", "APP_ID", myAppId
-    buildConfigField "String", "APP_HASH", "\"$myApiHash\""
+        vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
+        
+        // --- CONFIGURATION GITHUB ACTIONS ---
+        def myAppId = System.getenv("APP_ID") ?: "12345"
+        def myApiHash = System.getenv("API_HASH") ?: "test"
+        
+        buildConfigField "int", "APP_ID", myAppId
+        buildConfigField "String", "APP_HASH", "\"$myApiHash\""
+        // ------------------------------------
 
-    multiDexEnabled true
-}
+        multiDexEnabled true
 
+        // Configuration CMake spécifique à la compilation (Arguments)
+        // CORRECTION 2 : Ce bloc est bien remis À L'INTÉRIEUR de defaultConfig
         externalNativeBuild {
             cmake {
                 version '3.10.2'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
-    }
+    } // Fin de defaultConfig
 
+    // CORRECTION 3 : buildTypes est maintenant bien À L'INTÉRIEUR de android { }
     buildTypes {
         debug {
             debuggable true
@@ -208,7 +200,6 @@ android {
         }
     }
 }
-
 
 def getProps(String propName) {
     def propsFile = rootProject.file('local.properties')
